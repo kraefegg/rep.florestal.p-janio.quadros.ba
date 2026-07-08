@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard de Monitoramento da Reposição Florestal | UFV Apolo Presidente Jânio Quadros — Junho/2026</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1"></script>
+<style>
+:root{
+  --green-900:#0d3b23; --green-800:#12522f; --green-700:#1b6b3c; --green-600:#2f8f52;
+  --green-500:#4caf6e; --green-100:#e6f4ea; --amber:#e0a638; --red:#c9503f; --blue:#3d7ab5;
+  --bg:#f2f5f2; --card:#ffffff; --text:#1c2b22; --text-sec:#5c6b62; --radius:12px;
+  --gap:18px; --shadow:0 2px 10px rgba(13,59,35,.08);
+}
+*{box-sizing:border-box;}
+body{margin:0;font-family:'Segoe UI',system-ui,Arial,sans-serif;background:var(--bg);color:var(--text);}
+.container{max-width:1440px;margin:0 auto;padding:20px;}
+.header{
+  background:linear-gradient(120deg,var(--green-900),var(--green-700));
+  color:#fff;border-radius:var(--radius);padding:24px 28px;margin-bottom:var(--gap);
+  display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;
+  box-shadow:var(--shadow);
+}
+.header h1{margin:0;font-size:22px;font-weight:700;}
+.header p{margin:4px 0 0;font-size:13px;color:#cfe8d9;}
+.header .badge{background:rgba(255,255,255,.15);padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;}
+.tag-row{display:flex;gap:8px;flex-wrap:wrap;}
+.tabs{display:flex;gap:8px;margin-bottom:var(--gap);flex-wrap:wrap;}
+.tab-btn{background:var(--card);border:1px solid #d8e4dc;color:var(--text-sec);padding:9px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;transition:.15s;}
+.tab-btn.active{background:var(--green-700);color:#fff;border-color:var(--green-700);}
+.tab-btn:hover{border-color:var(--green-600);}
+.tab-content{display:none;}
+.tab-content.active{display:block;animation:fade .25s ease;}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:var(--gap);margin-bottom:var(--gap);}
+.kpi-card{background:var(--card);border-radius:var(--radius);padding:18px 20px;box-shadow:var(--shadow);border-left:4px solid var(--green-600);}
+.kpi-card.amber{border-left-color:var(--amber);}
+.kpi-card.red{border-left-color:var(--red);}
+.kpi-card.blue{border-left-color:var(--blue);}
+.kpi-label{font-size:11.5px;color:var(--text-sec);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;font-weight:600;}
+.kpi-value{font-size:26px;font-weight:800;color:var(--green-900);margin-bottom:4px;}
+.kpi-sub{font-size:12px;color:var(--text-sec);}
+.trend{font-size:12px;font-weight:700;}
+.trend.up{color:var(--green-600);} .trend.flat{color:var(--text-sec);} .trend.down{color:var(--red);}
+.grid-2{display:grid;grid-template-columns:1.3fr 1fr;gap:var(--gap);margin-bottom:var(--gap);}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--gap);margin-bottom:var(--gap);}
+@media(max-width:900px){.grid-2,.grid-3{grid-template-columns:1fr;}}
+.card{background:var(--card);border-radius:var(--radius);padding:20px 22px;box-shadow:var(--shadow);}
+.card h3{margin:0 0 4px;font-size:14.5px;font-weight:700;color:var(--green-900);}
+.card .subtitle{font-size:12px;color:var(--text-sec);margin-bottom:14px;}
+canvas{max-height:300px;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+thead th{text-align:left;padding:9px 10px;background:var(--green-100);color:var(--green-900);font-weight:700;font-size:11.5px;text-transform:uppercase;letter-spacing:.3px;}
+tbody td{padding:8px 10px;border-bottom:1px solid #eef2ef;}
+tbody tr:hover{background:#f7faf8;}
+.pill{padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:700;display:inline-block;}
+.pill.green{background:#e2f3e6;color:var(--green-700);}
+.pill.amber{background:#fbf0dc;color:#9a6b13;}
+.pill.red{background:#fbe4e0;color:var(--red);}
+.pill.blue{background:#e2ecf7;color:var(--blue);}
+.arrow{font-weight:800;}
+.footer{text-align:center;font-size:12px;color:var(--text-sec);padding:20px 0;}
+.note{background:#fbf6e8;border-left:4px solid var(--amber);padding:12px 16px;border-radius:8px;font-size:12.5px;color:#6b5416;margin-bottom:var(--gap);}
+.legend-swatch{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;}
+.two-col-list{display:grid;grid-template-columns:1fr 1fr;gap:8px 20px;font-size:13px;}
+.two-col-list li{margin-bottom:4px;}
+.section-title{font-size:15px;font-weight:800;color:var(--green-900);margin:4px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--green-100);}
+.exec-card{background:linear-gradient(135deg,var(--green-100),#fff);border:1px solid #d8ecdf;border-radius:var(--radius);padding:26px;text-align:center;}
+.exec-card .big{font-size:40px;font-weight:800;color:var(--green-900);}
+.footer-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--gap);margin-top:var(--gap);}
+@media(max-width:900px){.footer-stats{grid-template-columns:1fr 1fr;}}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--green-600);}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <div>
+      <h1>🌱 Dashboard de Monitoramento da Reposição Florestal</h1>
+      <p>Empreendimento: <b>UFV Apolo Presidente Jânio Quadros — BA</b> (Fazenda Caraíbas) · Mês de Referência: <b>Junho/2026</b> · Bragagnoli Ambiental (CTF/AIDA 8805586)</p>
+    </div>
+    <div class="tag-row">
+      <span class="badge">Diretor Técnico: Railson N. de Arruda — CREA-PB RNP 1619008858</span>
+      <span class="badge">Área de Plantio: 0,1125 ha</span>
+      <span class="badge">125 mudas implantadas</span>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="showTab('overview')">📊 Visão Geral</button>
+    <button class="tab-btn" onclick="showTab('mudas')">🌳 Monitoramento das Mudas</button>
+    <button class="tab-btn" onclick="showTab('indicadores')">💧 Indicadores Ambientais</button>
+    <button class="tab-btn" onclick="showTab('fito')">🩺 Avaliação Fitossanitária</button>
+    <button class="tab-btn" onclick="showTab('execucao')">🗺️ Execução do Programa</button>
+  </div>
+
+  <!-- ===================== TAB 1: VISÃO GERAL ===================== -->
+  <div id="overview" class="tab-content active">
+
+    <div class="kpi-row">
+      <div class="kpi-card">
+        <div class="kpi-label">Sobrevivência Estimada</div>
+        <div class="kpi-value">100%</div>
+        <div class="trend flat">→ mantida desde Abril/26</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Mortalidade de Mudas</div>
+        <div class="kpi-value">0%</div>
+      </div>
+      <div class="kpi-card amber">
+        <div class="kpi-label">Herbivoria</div>
+        <div class="kpi-value">Baixa</div>
+        <div class="kpi-sub">Ocorrência pontual (gafanhotos) — Abr–Mai/26</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Estresse Hídrico</div>
+        <div class="kpi-value">Não observado</div>
+      </div>
+      <div class="kpi-card blue">
+        <div class="kpi-label">Status Geral do Projeto</div>
+        <div class="kpi-value">Excelente</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Intervenções Corretivas Necessárias</div>
+        <div class="kpi-value">0</div>
+      </div>
+    </div>
+
+    <div class="note">📌 <b>Conclusão técnica (Maio–Junho/2026):</b> o plantio compensatório da UFV Apolo Presidente Jânio Quadros mantém evolução satisfatória, com elevado índice de sobrevivência e desenvolvimento vegetativo compatível com a fase de implantação. As chuvas do período favoreceram a disponibilidade hídrica, sem evidências de déficit hídrico. Foram registradas ocorrências pontuais de herbivoria por gafanhotos entre abril e maio, em baixa intensidade e sem evolução, não comprometendo o desenvolvimento das espécies. Irrigação, cercamento e demais estruturas permanecem em pleno funcionamento, sem necessidade de intervenções corretivas. <i>Indicadores quantitativos específicos de junho não constavam no material recebido; os valores abaixo mantêm a tendência de estabilidade observada em maio.</i></div>
+
+    <div class="grid-2">
+      <div class="card">
+        <h3>Indicadores de Monitoramento — Maio–Junho/2026</h3>
+        <div class="subtitle">Tabela 4.1 do Relatório Técnico</div>
+        <table>
+          <thead><tr><th>Indicador</th><th>Situação</th></tr></thead>
+          <tbody id="tblIndicadoresMonitoramento"></tbody>
+        </table>
+      </div>
+      <div class="card">
+        <h3>Painel Comparativo — Abril × Maio × Junho/2026</h3>
+        <div class="subtitle">Tabela 6.7 do Relatório Técnico</div>
+        <canvas id="chartComparativo"></canvas>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Gráfico de Desempenho Ambiental — Maio–Junho/2026</h3>
+      <div class="subtitle">Sobrevivência, irrigação, cercamento, fitossanidade e controle de erosão em 100%</div>
+      <canvas id="chartDesempenho"></canvas>
+    </div>
+
+  </div>
+
+  <!-- ===================== TAB 2: MONITORAMENTO DAS MUDAS ===================== -->
+  <div id="mudas" class="tab-content">
+
+    <div class="section-title">Desempenho das Espécies Nativas</div>
+    <div class="grid-3">
+      <div class="card">
+        <h3>Espécies Nativas</h3>
+        <div class="subtitle">Bioma Caatinga</div>
+        <div class="kpi-value" style="font-size:34px">100%</div>
+        <ul style="font-size:13px;color:var(--text-sec)">
+          <li>Sobrevivência estimada</li>
+          <li>Elevada eficiência ecológica</li>
+          <li>Boa adaptação às condições edafoclimáticas locais</li>
+          <li>Compatibilidade com o bioma Caatinga</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Desenvolvimento Vegetativo</h3>
+        <div class="subtitle">Avaliação de campo — Maio–Junho/2026</div>
+        <p style="font-size:13px;"><span class="pill green">Emissão de novas folhas</span></p>
+        <p style="font-size:13px;"><span class="pill green">Incremento de biomassa aérea</span></p>
+        <p style="font-size:13px;"><span class="pill green">Formação progressiva da copa</span></p>
+      </div>
+      <div class="card">
+        <h3>Campanhas de Monitoramento</h3>
+        <div class="subtitle">Linha do tempo — 2026</div>
+        <table>
+          <thead><tr><th>Campanha</th><th>Situação</th></tr></thead>
+          <tbody id="tblTimeline"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Painel Comparativo de Indicadores — Abril × Maio × Junho/2026</h3>
+      <div class="subtitle">Tabela 6.7 do Relatório Técnico, com extensão a junho</div>
+      <table>
+        <thead><tr><th>Indicador</th><th>Abril</th><th>Maio</th><th>Junho</th></tr></thead>
+        <tbody id="tblComparacao"></tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <!-- ===================== TAB 3: INDICADORES AMBIENTAIS ===================== -->
+  <div id="indicadores" class="tab-content">
+
+    <div class="grid-2">
+      <div class="card">
+        <h3>Indicadores Qualitativos de Desenvolvimento</h3>
+        <div class="subtitle">Tabela 6.5 do Relatório Técnico</div>
+        <table>
+          <thead><tr><th>Indicador</th><th>Resultado</th></tr></thead>
+          <tbody id="tblQualitativos"></tbody>
+        </table>
+      </div>
+      <div class="card">
+        <h3>Condição Operacional dos Componentes</h3>
+        <div class="subtitle">Tabela 6.3 — Sistema de irrigação por gotejamento</div>
+        <canvas id="chartComponentes"></canvas>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Painel de Indicadores Ambientais — Maio–Junho/2026</h3>
+      <div class="subtitle">Tabela 6.5.1 do Relatório Técnico</div>
+      <table>
+        <thead><tr><th>Indicador Estratégico</th><th>Resultado</th></tr></thead>
+        <tbody id="tblPainel"></tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h3>Semáforo Ambiental do Empreendimento</h3>
+      <div class="subtitle">Tabela 6.7.1 do Relatório Técnico</div>
+      <table>
+        <thead><tr><th>Critério</th><th>Status</th></tr></thead>
+        <tbody id="tblSemaforo"></tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <!-- ===================== TAB 4: AVALIAÇÃO FITOSSANITÁRIA ===================== -->
+  <div id="fito" class="tab-content">
+
+    <div class="kpi-row">
+      <div class="kpi-card">
+        <div class="kpi-label">Estado Fitossanitário</div>
+        <div class="kpi-value">Adequado</div>
+      </div>
+      <div class="kpi-card amber">
+        <div class="kpi-label">Herbivoria</div>
+        <div class="kpi-value">Baixa</div>
+        <div class="kpi-sub">Gafanhotos — pontual, Abr–Mai/26</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Doenças Fúngicas / Bacterianas</div>
+        <div class="kpi-value">Não observadas</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Estresse Hídrico</div>
+        <div class="kpi-value">Não observado</div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <h3>Avaliação Fitossanitária — Maio–Junho/2026</h3>
+        <div class="subtitle">Item 6.2 do Relatório Técnico</div>
+        <ul style="font-size:13px;color:var(--text-sec)">
+          <li>Baixa incidência de herbivoria por gafanhotos, pontual entre abril e maio</li>
+          <li>Danos restritos a pequenas perdas foliares em indivíduos isolados</li>
+          <li>Sem comprometimento do desenvolvimento vegetativo ou da sobrevivência</li>
+          <li>Sem sintomas de doenças fúngicas ou bacterianas</li>
+          <li>Sem deficiências nutricionais relevantes</li>
+          <li>Sem sintomas de estresse hídrico — elevada disponibilidade de água no período chuvoso</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Sistema de Irrigação — Item 6.3</h3>
+        <div class="subtitle">Irrigação por gotejamento</div>
+        <p style="font-size:13px;"><span class="pill green">Funcionamento normal</span></p>
+        <p style="font-size:13px;color:var(--text-sec)">Sistema plenamente operacional, com menor demanda no período devido às precipitações regulares. Sem evidências de déficit hídrico ou necessidade de intervenções corretivas.</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ===================== TAB 5: EXECUÇÃO DO PROGRAMA ===================== -->
+  <div id="execucao" class="tab-content">
+
+    <div class="section-title">Ações de Manejo e Estruturas de Apoio</div>
+    <div class="card">
+      <table>
+        <thead><tr><th>Ação / Estrutura</th><th>Situação</th></tr></thead>
+        <tbody id="tblAcoes"></tbody>
+      </table>
+    </div>
+
+    <div class="section-title" style="margin-top:22px">Área Monitorada</div>
+    <div class="grid-2">
+      <div class="card">
+        <h3>Dados da Área</h3>
+        <table>
+          <tbody>
+            <tr><td><b>Empreendedor</b></td><td>Consórcio Estrela do Oeste São Paulo I T</td></tr>
+            <tr><td><b>Empreendimento</b></td><td>UFV Apolo Presidente Jânio Quadros – BA (Fazenda Caraíbas)</td></tr>
+            <tr><td><b>Município</b></td><td>Presidente Jânio Quadros – BA</td></tr>
+            <tr><td><b>Área de plantio monitorada</b></td><td>0,1125 ha (1.125 m²)</td></tr>
+            <tr><td><b>Quantidade de mudas</b></td><td>125</td></tr>
+          </tbody>
+        </table>
+        <div class="subtitle" style="margin-top:14px">Coordenadas UTM — Área de Plantio</div>
+        <table>
+          <thead><tr><th>Ponto</th><th>Coordenada UTM</th><th>Observação</th></tr></thead>
+          <tbody>
+            <tr><td>Ponto de referência</td><td>14°40'19,834"S · 41°42'51,376"O</td><td>Área de plantio — 125 mudas (Croqui, item 12 do Relatório Técnico)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="exec-card">
+        <div class="kpi-label">Área de Plantio Monitorada</div>
+        <div class="big">0,1125 ha</div>
+        <div class="kpi-sub">1.125 m² · 125 mudas · área única, sem subdivisão em talhões</div>
+      </div>
+    </div>
+
+    <div class="section-title" style="margin-top:22px">Cronograma de Monitoramento</div>
+    <div class="note">📌 Periodicidade mensal confirmada: Monitoramento 01 (Fevereiro) a 05 (Junho/2026) já concluídos; a partir do Monitoramento 06 (Julho/2026) as campanhas seguem mensalmente até completar as 24 previstas.</div>
+    <div class="card">
+      <h3>24 Campanhas Previstas</h3>
+      <table>
+        <thead><tr><th>Campanha</th><th>Data Prevista</th><th>Situação</th></tr></thead>
+        <tbody id="tblCronograma"></tbody>
+      </table>
+    </div>
+
+    <div class="footer-stats">
+      <div class="kpi-card blue">
+        <div class="kpi-label">Total de Campanhas Previstas</div>
+        <div class="kpi-value" id="statTotal">24</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Campanhas Executadas</div>
+        <div class="kpi-value" id="statExecutadas">–</div>
+      </div>
+      <div class="kpi-card amber">
+        <div class="kpi-label">Campanhas Pendentes</div>
+        <div class="kpi-value" id="statPendentes">–</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Percentual de Execução</div>
+        <div class="kpi-value" id="statPercentual">–</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="footer">
+    Dashboard gerado a partir do Relatório Técnico de Execução — UFV Apolo Presidente Jânio Quadros–BA — Junho/2026 · Bragagnoli Ambiental (CTF/AIDA 8805586) · Gestor: André Bragagnoli · Diretor Técnico: Railson Nogueira de Arruda, Eng. Ambiental, CREA-PB RNP 1619008858, ART PB20250690039 · Técnico de Campo: Francisco de Assis Oliveira da Silva
+  </div>
+
+</div>
+
+<script>
+function showTab(id){
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  event.target.classList.add('active');
+}
+
+Chart.defaults.font.family = "'Segoe UI',Arial,sans-serif";
+Chart.defaults.color = '#5c6b62';
+const GREEN='#2f8f52', GREEN_D='#12522f', AMBER='#e0a638', RED='#c9503f', BLUE='#3d7ab5', GREEN_L='#7bc794';
+
+// ===================== TAB 1 =====================
+
+const indicadoresMonitoramento = [
+ ['Integridade das mudas','Satisfatória','green'],
+ ['Desenvolvimento vegetativo','Satisfatório','green'],
+ ['Estado fitossanitário','Adequado','green'],
+ ['Mortalidade','Não observada','green'],
+ ['Herbivoria','Baixa incidência pontual (gafanhotos)','amber'],
+ ['Sistema de irrigação','Operacional','green'],
+ ['Cercamento','Íntegro','green'],
+ ['Erosão do solo','Não observada','green'],
+ ['Invasão por animais','Não observada','green'],
+];
+document.getElementById('tblIndicadoresMonitoramento').innerHTML = indicadoresMonitoramento.map(r=>
+ `<tr><td>${r[0]}</td><td><span class="pill ${r[2]}">${r[1]}</span></td></tr>`).join('');
+
+// Chart: Painel comparativo Abril x Maio x Junho (percentuais)
+new Chart(document.getElementById('chartComparativo'), {
+  type:'bar',
+  data:{
+    labels:['Sobrevivência','Mortalidade','Conformidade Ambiental'],
+    datasets:[
+      {label:'Abril', data:[100,0,98], backgroundColor:BLUE, borderRadius:6},
+      {label:'Maio', data:[100,0,100], backgroundColor:GREEN_L, borderRadius:6},
+      {label:'Junho', data:[100,0,100], backgroundColor:GREEN, borderRadius:6}
+    ]
+  },
+  options:{responsive:true, scales:{y:{beginAtZero:true,max:110,ticks:{callback:v=>v+'%'}}}, plugins:{legend:{position:'bottom'}}}
+});
+
+// Chart: Desempenho ambiental (todos 100%, exceto herbivoria tratada à parte)
+new Chart(document.getElementById('chartDesempenho'), {
+  type:'bar',
+  data:{
+    labels:['Sobrevivência','Irrigação','Cercamento','Fitossanidade','Controle de Erosão'],
+    datasets:[{data:[100,100,100,100,100], backgroundColor:GREEN, borderRadius:6}]
+  },
+  options:{indexAxis:'y', responsive:true, plugins:{legend:{display:false}}, scales:{x:{max:100,ticks:{callback:v=>v+'%'}}}}
+});
+
+// ===================== TAB 2 =====================
+
+const timeline = [
+ ['Monitoramento 01 — Fevereiro/2026','✓ Concluído — plantio e inspeção inicial'],
+ ['Monitoramento 02 — Março/2026','✓ Concluído'],
+ ['Monitoramento 03 — Abril/2026','✓ Concluído'],
+ ['Monitoramento 04 — Maio/2026','✓ Concluído'],
+ ['Monitoramento 05 — Junho/2026','✓ Concluído — presente relatório'],
+ ['Monitoramento 06 — Julho/2026','Programado'],
+ ['Monitoramento 07 — Agosto/2026','Programado'],
+ ['Monitoramento 08 — Setembro/2026','Programado'],
+];
+document.getElementById('tblTimeline').innerHTML = timeline.map(r=>
+ `<tr><td><b>${r[0]}</b></td><td>${r[1]}</td></tr>`).join('');
+
+const comp = [
+ ['Sobrevivência','100%','100%','100%'],
+ ['Mortalidade','0%','0%','0%'],
+ ['Herbivoria','Baixa ocorrência pontual','Baixa ocorrência pontual','Baixa ocorrência pontual'],
+ ['Irrigação','Ajustes corretivos executados','100% operacional','100% operacional'],
+ ['Cercamento','Íntegro','Íntegro','Íntegro'],
+ ['Desenvolvimento Vegetativo','Satisfatório','Excelente','Excelente'],
+ ['Conformidade Ambiental','98%','100%','100%'],
+];
+document.getElementById('tblComparacao').innerHTML = comp.map(r=>
+ `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td></tr>`).join('');
+
+// ===================== TAB 3 =====================
+
+const qualitativos = [
+ ['Mortalidade','0%'],
+ ['Herbivoria','Baixa ocorrência pontual (gafanhotos)'],
+ ['Falhas de irrigação','0%'],
+ ['Danos mecânicos','0%'],
+ ['Problemas fitossanitários','0%'],
+ ['Estresse hídrico','Não observado'],
+ ['Integridade do cercamento','100%'],
+ ['Desenvolvimento vegetativo','Excelente'],
+];
+document.getElementById('tblQualitativos').innerHTML = qualitativos.map(r=>
+ `<tr><td>${r[0]}</td><td><b>${r[1]}</b></td></tr>`).join('');
+
+new Chart(document.getElementById('chartComponentes'), {
+  type:'bar',
+  data:{
+    labels:['Tubulações','Gotejadores','Conexões','Distribuição hídrica','Suporte às mudas'],
+    datasets:[{data:[100,100,100,100,100], backgroundColor:GREEN, borderRadius:6}]
+  },
+  options:{indexAxis:'y', responsive:true, plugins:{legend:{display:false}}, scales:{x:{max:100,ticks:{callback:v=>v+'%'}}}}
+});
+
+const painel = [
+ ['Área monitorada','Compensação Florestal UFV Apolo'],
+ ['Mortalidade de mudas','0%'],
+ ['Sobrevivência estimada','100%'],
+ ['Ocorrências fitossanitárias','0'],
+ ['Eventos de herbivoria','Baixa ocorrência localizada (gafanhotos)'],
+ ['Processos erosivos','0'],
+ ['Falhas de irrigação','0'],
+ ['Falhas de cercamento','0'],
+ ['Intervenções corretivas necessárias','0'],
+ ['Status geral do projeto','Excelente'],
+];
+document.getElementById('tblPainel').innerHTML = painel.map(r=>
+ `<tr><td><b>${r[0]}</b></td><td>${r[1]}</td></tr>`).join('');
+
+const semaforo = ['Desenvolvimento Vegetativo','Fitossanidade','Irrigação','Cercamento','Conservação do Solo','Compensação Florestal','Conformidade Ambiental'];
+document.getElementById('tblSemaforo').innerHTML = semaforo.map(s=>
+ `<tr><td>${s}</td><td><span class="dot"></span></td></tr>`).join('');
+
+// ===================== TAB 5 =====================
+
+const acoes = [
+ ['Sistema de irrigação por gotejamento','Operacional — funcionamento normal','green'],
+ ['Manutenção corretiva do sistema hidráulico','Não foi necessária','blue'],
+ ['Cercamento de proteção','Íntegro — sem rompimentos ou danos','green'],
+ ['Monitoramento fitossanitário','Contínuo','green'],
+ ['Acompanhamento da herbivoria por gafanhotos','Sob observação — sem necessidade de controle','amber'],
+ ['Registro fotográfico georreferenciado','Realizado em campo','blue'],
+];
+document.getElementById('tblAcoes').innerHTML = acoes.map(r=>
+ `<tr><td>${r[0]}</td><td><span class="pill ${r[2]}">${r[1]}</span></td></tr>`).join('');
+
+// Cronograma — periodicidade mensal confirmada, a partir de Fevereiro/2026
+const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const TOTAL_CAMPANHAS = 24;
+const CAMPANHAS_CONCLUIDAS = 5; // Fevereiro a Junho/2026
+const startMonth = 1; // Fevereiro (índice 1)
+const startYear = 2026;
+const cronograma = [];
+for(let i=0;i<TOTAL_CAMPANHAS;i++){
+  const m = (startMonth + i) % 12;
+  const y = startYear + Math.floor((startMonth + i) / 12);
+  cronograma.push({ n:i+1, periodo:`${MESES[m]}/${y}`, concluida:i < CAMPANHAS_CONCLUIDAS });
+}
+document.getElementById('tblCronograma').innerHTML = cronograma.map(c=>
+ `<tr><td>Monitoramento ${String(c.n).padStart(2,'0')}</td><td>${c.periodo}</td><td>${c.concluida?'<span class="pill green">✓ Concluído</span>':'<span class="pill blue">Programado</span>'}</td></tr>`).join('');
+
+// Rodapé — cálculo automático
+const executadas = cronograma.filter(c=>c.concluida).length;
+const pendentes = TOTAL_CAMPANHAS - executadas;
+const percentual = ((executadas / TOTAL_CAMPANHAS) * 100).toFixed(1);
+document.getElementById('statExecutadas').textContent = executadas;
+document.getElementById('statPendentes').textContent = pendentes;
+document.getElementById('statPercentual').textContent = percentual + '%';
+</script>
+</body>
+</html>
